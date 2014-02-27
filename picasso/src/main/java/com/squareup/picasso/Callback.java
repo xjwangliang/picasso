@@ -23,25 +23,6 @@ public interface Callback {
 
   void onError();
 
-    /**
-     *
-     * New method <BR/><BR/>
-     *
-     * Called when (original) bitmap loaded from internet or diskcard,you can
-     * do some transformation at the moment.If so you don't have to call
-     * {@link RequestCreator#transform} and so on.
-     * @param target
-     * @param bmp
-     * @return
-     */
-  Bitmap onOriginalBitmapLoaded(ImageView target, Bitmap bmp);
-
-  //just for test
-  boolean isTest();
-
-  //just for test
-  String getTestKey();
-
   public static class EmptyCallback implements Callback {
 
     @Override public void onSuccess() {
@@ -49,20 +30,5 @@ public interface Callback {
 
     @Override public void onError() {
     }
-
-	@Override
-	public Bitmap onOriginalBitmapLoaded(ImageView target,Bitmap bmp) {
-		return bmp;
-	}
-
-      @Override
-      public boolean isTest() {
-          return false;
-      }
-
-      @Override
-      public String getTestKey() {
-          return null;
-      }
   }
 }

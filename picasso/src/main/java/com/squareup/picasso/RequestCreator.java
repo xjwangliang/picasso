@@ -455,11 +455,13 @@ public class RequestCreator {
     if (!skipMemoryCache) {
       //first try to load bitmap from cache(from UI thread)
       Bitmap bitmap = picasso.quickMemoryCacheCheck(requestKey);
-        if(callback != null && callback.isTest()){
-            if (Constants.DEBUG){
-                Log.d(callback.getTestKey(),"quickMemoryCacheCheck for testKey ,return "+bitmap);
+      //test
+      if(Constants.DEBUG && callback != null && callback instanceof CallbackExt){
+            CallbackExt callbackExt = (CallbackExt)callback;
+            if (callbackExt.isTest()){
+                Log.d(callbackExt.getTestKey(),"quickMemoryCacheCheck for testKey ,return "+bitmap);
             }
-        }
+       }
       if (bitmap != null) {
         picasso.cancelRequest(target);
         PicassoDrawable.setBitmap(target, picasso.context, bitmap, MEMORY, noFade,

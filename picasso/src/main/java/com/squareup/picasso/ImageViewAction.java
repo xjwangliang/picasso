@@ -56,8 +56,8 @@ class ImageViewAction extends Action<ImageView> {
   	    if (target == null) {
   	      return null;
   	    }
-  		if (callback != null) {
-  	      return callback.onOriginalBitmapLoaded(target,bmp);
+  		if (callback != null && callback instanceof  CallbackExt) {
+  	      return ((CallbackExt)callback).onOriginalBitmapLoaded(target,bmp);
   	    }
 		return super.onOriginalBitmapLoaded(bmp);
 	}

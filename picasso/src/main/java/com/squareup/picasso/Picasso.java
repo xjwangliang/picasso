@@ -379,10 +379,14 @@ public class Picasso {
         throw new AssertionError("LoadedFrom cannot be null.");
       }
       action.complete(result, from);
-        if(action instanceof ImageViewAction){
+      //test
+      if(Constants.DEBUG && action instanceof ImageViewAction){
             ImageViewAction imageViewAction = ((ImageViewAction)action);
-            if (imageViewAction.callback != null && imageViewAction.callback.isTest()){
-                Log.d(imageViewAction.callback.getTestKey(),"complete for testKey ,return "+result+" from "+from);
+            if (imageViewAction.callback != null && imageViewAction.callback instanceof  CallbackExt){
+                CallbackExt callback = (CallbackExt)imageViewAction.callback;
+                if (callback.isTest()) {
+                    Log.d(callback.getTestKey(),"complete for testKey ,return "+result+" from "+from);
+                }
             }
         }
 
