@@ -21,10 +21,11 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.util.Log;
 import android.widget.ImageView;
 import android.widget.RemoteViews;
 import java.io.IOException;
-import org.jetbrains.annotations.TestOnly;
+//import org.jetbrains.annotations.TestOnly;
 
 import static com.squareup.picasso.BitmapHunter.forRequest;
 import static com.squareup.picasso.Picasso.LoadedFrom.MEMORY;
@@ -56,7 +57,8 @@ public class RequestCreator {
     this.data = new Request.Builder(uri, resourceId);
   }
 
-  @TestOnly RequestCreator() {
+  //@TestOnly
+  RequestCreator() {
     this.picasso = null;
     this.data = new Request.Builder(null, 0);
   }
@@ -64,7 +66,7 @@ public class RequestCreator {
   /**
    * A placeholder drawable to be used while the image is being loaded. If the requested image is
    * not immediately available in the memory cache then this resource will be set on the target
-   * {@link ImageView}.
+   * {@link android.widget.ImageView}.
    */
   public RequestCreator placeholder(int placeholderResId) {
     if (placeholderResId == 0) {
@@ -80,7 +82,7 @@ public class RequestCreator {
   /**
    * A placeholder drawable to be used while the image is being loaded. If the requested image is
    * not immediately available in the memory cache then this resource will be set on the target
-   * {@link ImageView}.
+   * {@link android.widget.ImageView}.
    * <p>
    * If you are not using a placeholder image but want to clear an existing image (such as when
    * used in an {@link android.widget.Adapter adapter}), pass in {@code null}.
@@ -118,17 +120,17 @@ public class RequestCreator {
   }
 
   /**
-   * Attempt to resize the image to fit exactly into the target {@link ImageView}'s bounds. This
-   * will result in delayed execution of the request until the {@link ImageView} has been measured.
+   * Attempt to resize the image to fit exactly into the target {@link android.widget.ImageView}'s bounds. This
+   * will result in delayed execution of the request until the {@link android.widget.ImageView} has been measured.
    * <p/>
-   * <em>Note:</em> This method works only when your target is an {@link ImageView}.
+   * <em>Note:</em> This method works only when your target is an {@link android.widget.ImageView}.
    */
   public RequestCreator fit() {
     deferred = true;
     return this;
   }
 
-  /** Internal use only. Used by {@link DeferredRequestCreator}. */
+  /** Internal use only. Used by {@link com.squareup.picasso.DeferredRequestCreator}. */
   RequestCreator unfit() {
     deferred = false;
     return this;
@@ -182,8 +184,8 @@ public class RequestCreator {
   /**
    * Attempt to decode the image using the specified config.
    * <p>
-   * Note: This value may be ignored by {@link BitmapFactory}. See
-   * {@link BitmapFactory.Options#inPreferredConfig its documentation} for more details.
+   * Note: This value may be ignored by {@link android.graphics.BitmapFactory}. See
+   * {@link android.graphics.BitmapFactory.Options#inPreferredConfig its documentation} for more details.
    */
   public RequestCreator config(Bitmap.Config config) {
     data.config(config);
@@ -200,6 +202,15 @@ public class RequestCreator {
     data.transform(transformation);
     return this;
   }
+
+    /**
+     *
+     * @return
+     */
+    public RequestCreator withMerge() {
+        data.withMerge();
+        return this;
+    }
 
   /**
    * Indicate that this action should not use the memory cache for attempting to load or save the
@@ -236,7 +247,7 @@ public class RequestCreator {
   }
 
   /**
-   * Asynchronously fulfills the request without a {@link ImageView} or {@link Target}. This is
+   * Asynchronously fulfills the request without a {@link android.widget.ImageView} or {@link Target}. This is
    * useful when you want to warm up the cache with an image.
    */
   public void fetch() {
@@ -335,8 +346,8 @@ public class RequestCreator {
   }
 
   /**
-   * Asynchronously fulfills the request into the specified {@link RemoteViews} object with the
-   * given {@code viewId}. This is used for loading bitmaps into a {@link Notification}.
+   * Asynchronously fulfills the request into the specified {@link android.widget.RemoteViews} object with the
+   * given {@code viewId}. This is used for loading bitmaps into a {@link android.app.Notification}.
    */
   public void into(RemoteViews remoteViews, int viewId, int notificationId,
       Notification notification) {
@@ -365,7 +376,7 @@ public class RequestCreator {
   }
 
   /**
-   * Asynchronously fulfills the request into the specified {@link RemoteViews} object with the
+   * Asynchronously fulfills the request into the specified {@link android.widget.RemoteViews} object with the
    * given {@code viewId}. This is used for loading bitmaps into all instances of a widget.
    */
   public void into(RemoteViews remoteViews, int viewId, int[] appWidgetIds) {
@@ -394,9 +405,9 @@ public class RequestCreator {
   }
 
   /**
-   * Asynchronously fulfills the request into the specified {@link ImageView}.
+   * Asynchronously fulfills the request into the specified {@link android.widget.ImageView}.
    * <p/>
-   * <em>Note:</em> This method keeps a weak reference to the {@link ImageView} instance and will
+   * <em>Note:</em> This method keeps a weak reference to the {@link android.widget.ImageView} instance and will
    * automatically support object recycling.
    */
   public void into(ImageView target) {
@@ -404,7 +415,7 @@ public class RequestCreator {
   }
 
   /**
-   * Asynchronously fulfills the request into the specified {@link ImageView} and invokes the
+   * Asynchronously fulfills the request into the specified {@link android.widget.ImageView} and invokes the
    * target {@link Callback} if it's not {@code null}.
    * <p/>
    * <em>Note:</em> The {@link Callback} param is a strong reference and will prevent your
@@ -418,6 +429,7 @@ public class RequestCreator {
     }
 
     if (!data.hasImage()) {
+    	//the target has wrong url or image resource,cancel the request for the target.
       picasso.cancelRequest(target);
       PicassoDrawable.setPlaceholder(target, placeholderResId, placeholderDrawable);
       return;
@@ -436,12 +448,18 @@ public class RequestCreator {
       }
       data.resize(measuredWidth, measuredHeight);
     }
-
+    //transform the request to another one(actually it returns the same one)
     Request finalData = picasso.transformRequest(data.build());
     String requestKey = createKey(finalData);
 
     if (!skipMemoryCache) {
+      //first try to load bitmap from cache(from UI thread)
       Bitmap bitmap = picasso.quickMemoryCacheCheck(requestKey);
+        if(callback != null && callback.isTest()){
+            if (Constants.DEBUG){
+                Log.d(callback.getTestKey(),"quickMemoryCacheCheck for testKey ,return "+bitmap);
+            }
+        }
       if (bitmap != null) {
         picasso.cancelRequest(target);
         PicassoDrawable.setBitmap(target, picasso.context, bitmap, MEMORY, noFade,
@@ -462,6 +480,10 @@ public class RequestCreator {
     picasso.enqueueAndSubmit(action);
   }
 
+  /**
+   * For appwidget.
+   * @param action
+   */
   private void performRemoteViewInto(RemoteViewsAction action) {
     if (!skipMemoryCache) {
       Bitmap bitmap = picasso.quickMemoryCacheCheck(action.getKey());

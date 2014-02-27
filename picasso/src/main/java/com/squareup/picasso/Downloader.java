@@ -28,10 +28,10 @@ public interface Downloader {
    * @param uri Remote image URL.
    * @param localCacheOnly If {@code true} the URL should only be loaded if available in a local
    * disk cache.
-   * @return {@link Response} containing either a {@link Bitmap} representation of the request or an
-   * {@link InputStream} for the image data. {@code null} can be returned to indicate a problem
+   * @return {@link com.squareup.picasso.Downloader.Response} containing either a {@link android.graphics.Bitmap} representation of the request or an
+   * {@link java.io.InputStream} for the image data. {@code null} can be returned to indicate a problem
    * loading the bitmap.
-   * @throws IOException if the requested URL cannot successfully be loaded.
+   * @throws java.io.IOException if the requested URL cannot successfully be loaded.
    */
   Response load(Uri uri, boolean localCacheOnly) throws IOException;
 
@@ -54,7 +54,7 @@ public interface Downloader {
      *
      * @param bitmap Image.
      * @param loadedFromCache {@code true} if the source of the image is from a local disk cache.
-     * @deprecated Use {@link Response#Response(android.graphics.Bitmap, boolean, long)} instead.
+     * @deprecated Use {@link com.squareup.picasso.Downloader.Response#Response(android.graphics.Bitmap, boolean, long)} instead.
      */
     @Deprecated @SuppressWarnings("UnusedDeclaration")
     public Response(Bitmap bitmap, boolean loadedFromCache) {
@@ -66,7 +66,7 @@ public interface Downloader {
      *
      * @param stream Image data stream.
      * @param loadedFromCache {@code true} if the source of the stream is from a local disk cache.
-     * @deprecated Use {@link Response#Response(java.io.InputStream, boolean, long)} instead.
+     * @deprecated Use {@link com.squareup.picasso.Downloader.Response#Response(java.io.InputStream, boolean, long)} instead.
      */
     @Deprecated @SuppressWarnings("UnusedDeclaration")
     public Response(InputStream stream, boolean loadedFromCache) {

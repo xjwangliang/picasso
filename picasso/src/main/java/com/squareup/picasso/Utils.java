@@ -15,6 +15,7 @@
  */
 package com.squareup.picasso;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
 import android.content.ContentResolver;
@@ -26,11 +27,15 @@ import android.os.Looper;
 import android.os.Process;
 import android.os.StatFs;
 import android.provider.Settings;
+import android.util.Base64;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
 
@@ -42,7 +47,7 @@ import static android.os.Build.VERSION_CODES.HONEYCOMB_MR1;
 import static android.os.Process.THREAD_PRIORITY_BACKGROUND;
 import static android.provider.Settings.System.AIRPLANE_MODE_ON;
 
-final class Utils {
+public final class Utils {
   static final String THREAD_PREFIX = "Picasso-";
   static final String THREAD_IDLE_NAME = THREAD_PREFIX + "Idle";
   static final int DEFAULT_READ_TIMEOUT = 20 * 1000; // 20s
@@ -69,10 +74,39 @@ final class Utils {
   private static final int WEBP_FILE_HEADER_SIZE = 12;
   private static final String WEBP_FILE_HEADER_RIFF = "RIFF";
   private static final String WEBP_FILE_HEADER_WEBP = "WEBP";
+  private static MessageDigest md5;
+  private static final int DEFAULT_BASE_64_PARAM = Base64.NO_PADDING | Base64.NO_WRAP;
 
   private Utils() {
     // No instances.
   }
+ 
+
+	private static MessageDigest getMd5() {
+		if (md5 == null) {
+			try {
+				md5 = MessageDigest.getInstance("MD5");
+			} catch (NoSuchAlgorithmException e) {
+				throw new IllegalArgumentException(e);
+			}
+		}
+		return md5;
+	}
+
+	/**
+	 * 
+	 * @param picassoKey
+	 * @return
+	 */
+	@SuppressLint("NewApi")
+	public static String encodeCachedKey(String picassoKey) {
+        return String.valueOf(picassoKey.hashCode());
+//		return Base64
+//				.encodeToString(getMd5().digest(picassoKey.getBytes()),
+//						DEFAULT_BASE_64_PARAM).replace('/', 'b')
+//				.replace('+', 'c').toLowerCase();
+	}
+	
 
   static int getBitmapBytes(Bitmap bitmap) {
     int result;
@@ -96,9 +130,17 @@ final class Utils {
   static String createKey(Request data) {
     String result = createKey(data, MAIN_THREAD_KEY_BUILDER);
     MAIN_THREAD_KEY_BUILDER.setLength(0);
+
+      result = Utils.encodeCachedKey(result);
     return result;
   }
 
+    /**
+     * Create cache key for request data.
+     * @param data
+     * @param builder
+     * @return
+     */
   static String createKey(Request data, StringBuilder builder) {
     if (data.uri != null) {
       String path = data.uri.toString();
@@ -134,6 +176,9 @@ final class Utils {
         builder.append('\n');
       }
     }
+      if(data.withMerge){
+          builder.append("withMerge\n");
+      }
 
     return builder.toString();
   }
@@ -169,7 +214,7 @@ final class Utils {
     try {
       Class.forName("com.squareup.okhttp.OkHttpClient");
       return OkHttpLoaderCreator.create(context);
-    } catch (ClassNotFoundException e) {
+    } catch (Exception e) {
       return new UrlConnectionDownloader(context);
     }
   }
@@ -316,6 +361,7 @@ final class Utils {
 
   private static class OkHttpLoaderCreator {
     static Downloader create(Context context) {
+      //throw new RuntimeException("OkHttpDownloader does not supported!");
       return new OkHttpDownloader(context);
     }
   }

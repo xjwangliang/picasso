@@ -49,6 +49,20 @@ class ImageViewAction extends Action<ImageView> {
       callback.onSuccess();
     }
   }
+  
+  	@Override
+	public Bitmap onOriginalBitmapLoaded(Bitmap bmp) {
+  		 ImageView target = this.target.get();
+  	    if (target == null) {
+  	      return null;
+  	    }
+  		if (callback != null) {
+  	      return callback.onOriginalBitmapLoaded(target,bmp);
+  	    }
+		return super.onOriginalBitmapLoaded(bmp);
+	}
+  
+ 
 
   @Override public void error() {
     ImageView target = this.target.get();

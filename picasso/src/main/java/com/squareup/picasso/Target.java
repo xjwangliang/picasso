@@ -40,18 +40,18 @@ public interface Target {
   /**
    * Callback indicating the image could not be successfully loaded.
    * <p/>
-   * <strong>Note:</strong> The passed {@link Drawable} may be {@code null} if none has been
-   * specified via {@link RequestCreator#error(android.graphics.drawable.Drawable)}
-   * or {@link RequestCreator#error(int)}.
+   * <strong>Note:</strong> The passed {@link android.graphics.drawable.Drawable} may be {@code null} if none has been
+   * specified via {@link com.squareup.picasso.RequestCreator#error(android.graphics.drawable.Drawable)}
+   * or {@link com.squareup.picasso.RequestCreator#error(int)}.
    */
   void onBitmapFailed(Drawable errorDrawable);
 
   /**
    * Callback invoked right before your request is submitted.
    * <p/>
-   * <strong>Note:</strong> The passed {@link Drawable} may be {@code null} if none has been
-   * specified via {@link RequestCreator#placeholder(android.graphics.drawable.Drawable)}
-   * or {@link RequestCreator#placeholder(int)}.
+   * <strong>Note:</strong> The passed {@link android.graphics.drawable.Drawable} may be {@code null} if none has been
+   * specified via {@link com.squareup.picasso.RequestCreator#placeholder(android.graphics.drawable.Drawable)}
+   * or {@link com.squareup.picasso.RequestCreator#placeholder(int)}.
    */
   void onPrepareLoad(Drawable placeHolderDrawable);
 }

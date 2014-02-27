@@ -1,19 +1,19 @@
-/*
- * Copyright (C) 2013 Square, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.squareup.picasso;
+/**
+* Copyright (C) 2013 Square, Inc.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
 import android.content.Context;
 import android.net.Uri;
@@ -26,7 +26,7 @@ import java.net.URL;
 
 import static com.squareup.picasso.Utils.parseResponseSourceHeader;
 
-/** A {@link Downloader} which uses OkHttp to download images. */
+/** A {@link com.squareup.picasso.Downloader} which uses OkHttp to download images. */
 public class OkHttpDownloader implements Downloader {
   static final String RESPONSE_SOURCE_ANDROID = "X-Android-Response-Source";
   static final String RESPONSE_SOURCE_OKHTTP = "OkHttp-Response-Source";

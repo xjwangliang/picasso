@@ -19,7 +19,10 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.Log;
+
 import java.io.IOException;
+import java.util.List;
 
 import static com.squareup.picasso.Picasso.LoadedFrom.DISK;
 
@@ -32,11 +35,70 @@ class ResourceBitmapHunter extends BitmapHunter {
     this.context = context;
   }
 
+    /**
+     * notify that original bitmap loaded.
+     * @param bmp
+     */
+    private Bitmap notifyResult(Bitmap bmp) {
+        Bitmap retVal = null;
+        Action single = getAction();
+        List<Action> joined = getActions();
+
+        //boolean hasMultiple = joined != null && !joined.isEmpty();
+        boolean shouldDeliver = single != null /*&& !hasMultiple*/;
+
+        if (!shouldDeliver) {
+            return retVal;
+        }
+        boolean saveImage = false;
+
+        if (single != null) {
+            retVal = notifyResult(bmp, single);
+        }
+
+//		if (hasMultiple) {
+//			for (int i = 0, n = joined.size(); i < n; i++) {
+//				Action join = joined.get(i);
+//				saveImage = deliverAction(bmp, join);
+//			}
+//		}
+        return retVal;
+    }
+
+    private Bitmap notifyResult(Bitmap result,
+                                Action action) {
+        if (action == null || action.isCancelled()) {
+            return null;
+        }
+        return action.onOriginalBitmapLoaded(result);
+    }
+
   @Override Bitmap decode(Request data) throws IOException {
-    Resources res = Utils.getResources(context, data);
-    int id = Utils.getResourceId(res, data);
-    return decodeResource(res, id, data);
+      Resources res = Utils.getResources(context, data);
+      int id = Utils.getResourceId(res, data);
+      Bitmap bmp = decodeResource(res, id, data);
+      if (bmp != null) {
+          Bitmap old = bmp;
+          //Log.i(TAG, "decode original bitmap from sdcard uri length" + data.uri.toString().length() + " key length" + key.length());
+          loadedFrom = DISK;
+          //do the transformation if necessary
+          synchronized (DECODE_LOCK) {
+              bmp = notifyResult(bmp);
+          }
+          //even if bmp is null,return null,because null means it fails when do transformation
+          if(bmp != null && bmp != old && !old.isRecycled()){
+              old.recycle();
+          }
+          return bmp;
+      }
+      return bmp;
   }
+
+//    @Override Bitmap decode(Request data) throws IOException {
+//    Resources res = Utils.getResources(context, data);
+//    int id = Utils.getResourceId(res, data);
+//    return decodeResource(res, id, data);
+//  }
 
   @Override Picasso.LoadedFrom getLoadedFrom() {
     return DISK;

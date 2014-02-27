@@ -65,9 +65,11 @@ public final class Request {
   /** Target image config for decoding. */
   public final Bitmap.Config config;
 
+  public final boolean withMerge;
+
   private Request(Uri uri, int resourceId, List<Transformation> transformations, int targetWidth,
       int targetHeight, boolean centerCrop, boolean centerInside, float rotationDegrees,
-      float rotationPivotX, float rotationPivotY, boolean hasRotationPivot, Bitmap.Config config) {
+      float rotationPivotX, float rotationPivotY, boolean hasRotationPivot, Bitmap.Config config,boolean withMerge) {
     this.uri = uri;
     this.resourceId = resourceId;
     if (transformations == null) {
@@ -84,6 +86,7 @@ public final class Request {
     this.rotationPivotY = rotationPivotY;
     this.hasRotationPivot = hasRotationPivot;
     this.config = config;
+    this.withMerge = withMerge;
   }
 
   String getName() {
@@ -127,8 +130,10 @@ public final class Request {
     private boolean hasRotationPivot;
     private List<Transformation> transformations;
     private Bitmap.Config config;
+    /**add a var*/
+    private boolean withMerged;
 
-    /** Start building a request using the specified {@link Uri}. */
+    /** Start building a request using the specified {@link android.net.Uri}. */
     public Builder(Uri uri) {
       setUri(uri);
     }
@@ -160,6 +165,10 @@ public final class Request {
       config = request.config;
     }
 
+    /**
+     * empty uri or empty image resource.
+     * @return
+     */
     boolean hasImage() {
       return uri != null || resourceId != 0;
     }
@@ -261,6 +270,11 @@ public final class Request {
       return this;
     }
 
+      public Builder withMerge() {
+          withMerged = true;
+          return this;
+      }
+
     /** Rotate the image by the specified degrees around a pivot point. */
     public Builder rotate(float degrees, float pivotX, float pivotY) {
       rotationDegrees = degrees;
@@ -313,7 +327,7 @@ public final class Request {
         throw new IllegalStateException("Center inside requires calling resize.");
       }
       return new Request(uri, resourceId, transformations, targetWidth, targetHeight, centerCrop,
-          centerInside, rotationDegrees, rotationPivotX, rotationPivotY, hasRotationPivot, config);
+          centerInside, rotationDegrees, rotationPivotX, rotationPivotY, hasRotationPivot, config,withMerged);
     }
   }
 }

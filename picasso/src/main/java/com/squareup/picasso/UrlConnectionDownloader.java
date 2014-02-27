@@ -15,6 +15,7 @@
  */
 package com.squareup.picasso;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.net.Uri;
 import android.net.http.HttpResponseCache;
@@ -27,7 +28,7 @@ import java.net.URL;
 import static com.squareup.picasso.Utils.parseResponseSourceHeader;
 
 /**
- * A {@link Downloader} which uses {@link HttpURLConnection} to download images. A disk cache of 2%
+ * A {@link Downloader} which uses {@link java.net.HttpURLConnection} to download images. A disk cache of 2%
  * of the total available space will be used (capped at 50MB) will automatically be installed in the
  * application's cache directory, when available.
  */
@@ -88,6 +89,8 @@ public class UrlConnectionDownloader implements Downloader {
   }
 
   private static class ResponseCacheIcs {
+
+    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     static Object install(Context context) throws IOException {
       File cacheDir = Utils.createDefaultCacheDir(context);
       HttpResponseCache cache = HttpResponseCache.getInstalled();

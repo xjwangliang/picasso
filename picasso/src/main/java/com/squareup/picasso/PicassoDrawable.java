@@ -38,7 +38,7 @@ final class PicassoDrawable extends BitmapDrawable {
   private static final float FADE_DURATION = 200f; //ms
 
   /**
-   * Create or update the drawable on the target {@link ImageView} to display the supplied bitmap
+   * Create or update the drawable on the target {@link android.widget.ImageView} to display the supplied bitmap
    * image.
    */
   static void setBitmap(ImageView target, Context context, Bitmap bitmap,
@@ -53,7 +53,7 @@ final class PicassoDrawable extends BitmapDrawable {
   }
 
   /**
-   * Create or update the drawable on the target {@link ImageView} to display the supplied
+   * Create or update the drawable on the target {@link android.widget.ImageView} to display the supplied
    * placeholder image.
    */
   static void setPlaceholder(ImageView target, int placeholderResId, Drawable placeholderDrawable) {

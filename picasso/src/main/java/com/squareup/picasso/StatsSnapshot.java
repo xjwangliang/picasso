@@ -66,7 +66,7 @@ public class StatsSnapshot {
     Log.i(TAG, logWriter.toString());
   }
 
-  /** Prints out this {@link StatsSnapshot} with the the provided {@link PrintWriter}. */
+  /** Prints out this {@link StatsSnapshot} with the the provided {@link java.io.PrintWriter}. */
   public void dump(PrintWriter writer) {
     writer.println("===============BEGIN PICASSO STATS ===============");
     writer.println("Memory Cache Stats");

@@ -50,13 +50,14 @@ class Dispatcher {
   static final int HUNTER_COMPLETE = 4;
   static final int HUNTER_RETRY = 5;
   static final int HUNTER_DECODE_FAILED = 6;
+  /**bitmap loaded and cached*/
   static final int HUNTER_DELAY_NEXT_BATCH = 7;
   static final int HUNTER_BATCH_COMPLETE = 8;
   static final int NETWORK_STATE_CHANGE = 9;
   static final int AIRPLANE_MODE_CHANGE = 10;
 
   private static final String DISPATCHER_THREAD_NAME = "Dispatcher";
-  private static final int BATCH_DELAY = 200; // ms
+  private static final int BATCH_DELAY = 10; // ms
 
   final DispatcherThread dispatcherThread;
   final Context context;
@@ -101,6 +102,10 @@ class Dispatcher {
     handler.sendMessage(handler.obtainMessage(REQUEST_SUBMIT, action));
   }
 
+  /**
+   * 
+   * @param action old action
+   */
   void dispatchCancel(Action action) {
     handler.sendMessage(handler.obtainMessage(REQUEST_CANCEL, action));
   }
@@ -129,6 +134,7 @@ class Dispatcher {
   void performSubmit(Action action) {
     BitmapHunter hunter = hunterMap.get(action.getKey());
     if (hunter != null) {
+    	//there is already exists an action for the same key,just attach.
       hunter.attach(action);
       return;
     }
@@ -139,6 +145,7 @@ class Dispatcher {
 
     hunter = forRequest(context, action.getPicasso(), this, cache, stats, action, downloader);
     hunter.future = service.submit(hunter);
+    //remember the hunter for the key.
     hunterMap.put(action.getKey(), hunter);
   }
 
@@ -170,6 +177,7 @@ class Dispatcher {
 
   void performComplete(BitmapHunter hunter) {
     if (!hunter.shouldSkipMemoryCache()) {
+      //cache.set(Utils.encodeCachedKey(hunter.getKey()), hunter.getResult());
       cache.set(hunter.getKey(), hunter.getResult());
     }
     hunterMap.remove(hunter.getKey());

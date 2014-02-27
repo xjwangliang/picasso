@@ -15,6 +15,18 @@
  */
 package com.squareup.picasso;
 
+import static android.os.Process.THREAD_PRIORITY_BACKGROUND;
+import static com.squareup.picasso.Dispatcher.HUNTER_BATCH_COMPLETE;
+import static com.squareup.picasso.Dispatcher.REQUEST_GCED;
+import static com.squareup.picasso.Utils.THREAD_PREFIX;
+
+import java.io.File;
+import java.lang.ref.ReferenceQueue;
+import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
+import java.util.concurrent.ExecutorService;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -23,25 +35,16 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Process;
+import android.util.Log;
 import android.widget.ImageView;
-import java.io.File;
-import java.lang.ref.ReferenceQueue;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
-import java.util.concurrent.ExecutorService;
 
-import static android.os.Process.THREAD_PRIORITY_BACKGROUND;
-import static com.squareup.picasso.Action.RequestWeakReference;
-import static com.squareup.picasso.Dispatcher.HUNTER_BATCH_COMPLETE;
-import static com.squareup.picasso.Dispatcher.REQUEST_GCED;
-import static com.squareup.picasso.Utils.THREAD_PREFIX;
+import com.squareup.picasso.Action.RequestWeakReference;
 
 /**
  * Image downloading, transformation, and caching manager.
  * <p/>
  * Use {@link #with(android.content.Context)} for the global singleton instance or construct your
- * own instance with {@link Builder}.
+ * own instance with {@link com.squareup.picasso.Picasso.Builder}.
  */
 public class Picasso {
 
@@ -72,7 +75,7 @@ public class Picasso {
      */
     Request transformRequest(Request request);
 
-    /** A {@link RequestTransformer} which returns the original request. */
+    /** A {@link com.squareup.picasso.Picasso.RequestTransformer} which returns the original request. */
     RequestTransformer IDENTITY = new RequestTransformer() {
       @Override public Request transformRequest(Request request) {
         return request;
@@ -80,6 +83,9 @@ public class Picasso {
     };
   }
 
+  /**
+   * Main handler
+   */
   static final Handler HANDLER = new Handler(Looper.getMainLooper()) {
     @Override public void handleMessage(Message msg) {
       switch (msg.what) {
@@ -112,6 +118,7 @@ public class Picasso {
   final Context context;
   final Dispatcher dispatcher;
   final Cache cache;
+  final String cacheDir;
   final Stats stats;
   final Map<Object, Action> targetToAction;
   final Map<ImageView, DeferredRequestCreator> targetToDeferredRequestCreator;
@@ -119,12 +126,22 @@ public class Picasso {
 
   boolean indicatorsEnabled;
   boolean shutdown;
+  
+  final DiskFetcher diskFetcher;
 
   Picasso(Context context, Dispatcher dispatcher, Cache cache, Listener listener,
+      RequestTransformer requestTransformer, Stats stats, boolean indicatorsEnabled)
+  {
+    this(context, dispatcher, cache, "/sdcard", listener, requestTransformer, stats, indicatorsEnabled);
+  }
+
+  Picasso(Context context, Dispatcher dispatcher, Cache cache, String cacheDir, Listener listener,
       RequestTransformer requestTransformer, Stats stats, boolean indicatorsEnabled) {
     this.context = context;
     this.dispatcher = dispatcher;
     this.cache = cache;
+    this.cacheDir = cacheDir;
+    this.diskFetcher = new DiskFetcher(cacheDir);
     this.listener = listener;
     this.requestTransformer = requestTransformer;
     this.stats = stats;
@@ -134,9 +151,10 @@ public class Picasso {
     this.referenceQueue = new ReferenceQueue<Object>();
     this.cleanupThread = new CleanupThread(referenceQueue, HANDLER);
     this.cleanupThread.start();
+    
   }
 
-  /** Cancel any existing requests for the specified target {@link ImageView}. */
+  /** Cancel any existing requests for the specified target {@link android.widget.ImageView}. */
   public void cancelRequest(ImageView view) {
     cancelExistingRequest(view);
   }
@@ -152,7 +170,7 @@ public class Picasso {
    * Passing {@code null} as a {@code uri} will not trigger any request but will set a placeholder,
    * if one is specified.
    *
-   * @see #load(File)
+   * @see #load(java.io.File)
    * @see #load(String)
    * @see #load(int)
    */
@@ -162,7 +180,7 @@ public class Picasso {
 
   /**
    * Start an image request using the specified path. This is a convenience method for calling
-   * {@link #load(Uri)}.
+   * {@link #load(android.net.Uri)}.
    * <p>
    * This path may be a remote URL, file resource (prefixed with {@code file:}), content resource
    * (prefixed with {@code content:}), or android resource (prefixed with {@code
@@ -171,8 +189,8 @@ public class Picasso {
    * Passing {@code null} as a {@code path} will not trigger any request but will set a
    * placeholder, if one is specified.
    *
-   * @see #load(Uri)
-   * @see #load(File)
+   * @see #load(android.net.Uri)
+   * @see #load(java.io.File)
    * @see #load(int)
    */
   public RequestCreator load(String path) {
@@ -187,12 +205,12 @@ public class Picasso {
 
   /**
    * Start an image request using the specified image file. This is a convenience method for
-   * calling {@link #load(Uri)}.
+   * calling {@link #load(android.net.Uri)}.
    * <p>
    * Passing {@code null} as a {@code file} will not trigger any request but will set a
    * placeholder, if one is specified.
    *
-   * @see #load(Uri)
+   * @see #load(android.net.Uri)
    * @see #load(String)
    * @see #load(int)
    */
@@ -206,9 +224,9 @@ public class Picasso {
   /**
    * Start an image request using the specified drawable resource ID.
    *
-   * @see #load(Uri)
+   * @see #load(android.net.Uri)
    * @see #load(String)
-   * @see #load(File)
+   * @see #load(java.io.File)
    */
   public RequestCreator load(int resourceId) {
     if (resourceId == 0) {
@@ -244,7 +262,7 @@ public class Picasso {
   }
 
   /**
-   * Creates a {@link StatsSnapshot} of the current stats for this instance.
+   * Creates a {@link com.squareup.picasso.StatsSnapshot} of the current stats for this instance.
    * <b>NOTE:</b> The snapshot may not always be completely up-to-date if requests are still in
    * progress.
    */
@@ -299,15 +317,18 @@ public class Picasso {
     dispatcher.dispatchSubmit(action);
   }
 
-  Bitmap quickMemoryCacheCheck(String key) {
-    Bitmap cached = cache.get(key);
-    if (cached != null) {
-      stats.dispatchCacheHit();
-    } else {
-      stats.dispatchCacheMiss();
-    }
-    return cached;
-  }
+	Bitmap quickMemoryCacheCheck(String picassoKey) {
+		// it's called in UI thread,so do not do load bitmap from internet or
+		// disk cache.
+		//String realKey = Utils.encodeCachedKey(picassoKey);
+		Bitmap cached = cache.get(picassoKey);
+		if (cached != null) {
+			stats.dispatchCacheHit();
+		} else {
+			stats.dispatchCacheMiss();
+		}
+		return cached;
+	}
 
   void complete(BitmapHunter hunter) {
     Action single = hunter.getAction();
@@ -342,6 +363,12 @@ public class Picasso {
     }
   }
 
+  /**
+   * deliverAction
+   * @param result
+   * @param from
+   * @param action
+   */
   private void deliverAction(Bitmap result, LoadedFrom from, Action action) {
     if (action.isCancelled()) {
       return;
@@ -352,14 +379,26 @@ public class Picasso {
         throw new AssertionError("LoadedFrom cannot be null.");
       }
       action.complete(result, from);
+        if(action instanceof ImageViewAction){
+            ImageViewAction imageViewAction = ((ImageViewAction)action);
+            if (imageViewAction.callback != null && imageViewAction.callback.isTest()){
+                Log.d(imageViewAction.callback.getTestKey(),"complete for testKey ,return "+result+" from "+from);
+            }
+        }
+
     } else {
       action.error();
     }
   }
 
+  /**
+   * remove the old request action for the same target.
+   * @param target 
+   */
   private void cancelExistingRequest(Object target) {
     Action action = targetToAction.remove(target);
     if (action != null) {
+    	//target already in map,cancel the old action
       action.cancel();
       dispatcher.dispatchCancel(action);
     }
@@ -422,7 +461,7 @@ public class Picasso {
    * </ul>
    * <p>
    * If these settings do not meet the requirements of your application you can construct your own
-   * instance with full control over the configuration by using {@link Picasso.Builder}.
+   * instance with full control over the configuration by using {@link com.squareup.picasso.Picasso.Builder}.
    */
   public static Picasso with(Context context) {
     if (singleton == null) {
@@ -438,6 +477,7 @@ public class Picasso {
     private Downloader downloader;
     private ExecutorService service;
     private Cache cache;
+    private String cacheDir;
     private Listener listener;
     private RequestTransformer transformer;
 
@@ -451,7 +491,7 @@ public class Picasso {
       this.context = context.getApplicationContext();
     }
 
-    /** Specify the {@link Downloader} that will be used for downloading images. */
+    /** Specify the {@link com.squareup.picasso.Downloader} that will be used for downloading images. */
     public Builder downloader(Downloader downloader) {
       if (downloader == null) {
         throw new IllegalArgumentException("Downloader must not be null.");
@@ -475,8 +515,12 @@ public class Picasso {
       return this;
     }
 
-    /** Specify the memory cache used for the most recent images. */
     public Builder memoryCache(Cache memoryCache) {
+            return memoryCache(memoryCache, "/sdcard");
+    }
+
+    /** Specify the memory cache used for the most recent images. add cache dir*/
+    public Builder memoryCache(Cache memoryCache,String cacheDir) {
       if (memoryCache == null) {
         throw new IllegalArgumentException("Memory cache must not be null.");
       }
@@ -484,6 +528,10 @@ public class Picasso {
         throw new IllegalStateException("Memory cache already set.");
       }
       this.cache = memoryCache;
+      this.cacheDir = cacheDir;
+      if (Constants.DEBUG){
+          Log.d("cacheDir","cacheDir "+cacheDir);
+      }
       return this;
     }
 
@@ -498,6 +546,14 @@ public class Picasso {
       this.listener = listener;
       return this;
     }
+
+      /**
+       *
+       * @param debug
+       */
+      public void setDebug(boolean debug) {
+          Constants.DEBUG = debug;
+      }
 
     /**
      * Specify a transformer for all incoming requests.
@@ -550,7 +606,7 @@ public class Picasso {
 
       Dispatcher dispatcher = new Dispatcher(context, service, HANDLER, downloader, cache, stats);
 
-      return new Picasso(context, dispatcher, cache, listener, transformer, stats,
+      return new Picasso(context, dispatcher, cache,cacheDir, listener, transformer, stats,
           indicatorsEnabled);
     }
   }

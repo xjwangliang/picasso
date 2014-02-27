@@ -22,6 +22,8 @@ import android.graphics.Matrix;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.util.Log;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -36,6 +38,10 @@ import static android.provider.ContactsContract.Contacts;
 import static com.squareup.picasso.AssetBitmapHunter.ANDROID_ASSET;
 import static com.squareup.picasso.Picasso.LoadedFrom.MEMORY;
 
+/**
+ * @author tradehero
+ *
+ */
 abstract class BitmapHunter implements Runnable {
 
   /**
@@ -43,7 +49,7 @@ abstract class BitmapHunter implements Runnable {
    * this will only ever happen in background threads we help avoid excessive memory thrashing as
    * well as potential OOMs. Shamelessly stolen from Volley.
    */
-  private static final Object DECODE_LOCK = new Object();
+  protected static final Object DECODE_LOCK = new Object();
 
   private static final ThreadLocal<StringBuilder> NAME_BUILDER = new ThreadLocal<StringBuilder>() {
     @Override protected StringBuilder initialValue() {
@@ -51,16 +57,20 @@ abstract class BitmapHunter implements Runnable {
     }
   };
 
-  final Picasso picasso;
+  protected static final String TAG = "BitmapHunter";
+  /**change visibility of picasso to 'protected' from defalut */
+  protected final Picasso picasso;
   final Dispatcher dispatcher;
-  final Cache cache;
+  /**change visibility of cache to 'protected' from defalut */
+  protected final Cache cache;
   final Stats stats;
-  final String key;
+  /**change visibility of key to 'protected' from defalut */
+  protected final String key;
   final Request data;
   final boolean skipMemoryCache;
 
-  Action action;
-  List<Action> actions;
+  protected Action action;
+  protected List<Action> actions;
   Bitmap result;
   Future<?> future;
   Picasso.LoadedFrom loadedFrom;
@@ -96,28 +106,40 @@ abstract class BitmapHunter implements Runnable {
     } catch (Downloader.ResponseException e) {
       exception = e;
       dispatcher.dispatchFailed(this);
+      Log.e(TAG, "BitmapHunter exception" ,e);
     } catch (IOException e) {
       exception = e;
       dispatcher.dispatchRetry(this);
+      Log.e(TAG, "BitmapHunter exception" ,e);
     } catch (OutOfMemoryError e) {
       StringWriter writer = new StringWriter();
       stats.createSnapshot().dump(new PrintWriter(writer));
       exception = new RuntimeException(writer.toString(), e);
       dispatcher.dispatchFailed(this);
+      Log.e(TAG, "BitmapHunter exception" ,e);
     } catch (Exception e) {
       exception = e;
       dispatcher.dispatchFailed(this);
+      Log.e(TAG, "BitmapHunter exception" ,e);
     } finally {
       Thread.currentThread().setName(Utils.THREAD_IDLE_NAME);
     }
   }
-
+  
+  /**
+   * Decode bitmap from internet or discard.
+   * @param data
+   * @return
+   * @throws java.io.IOException
+   */
   abstract Bitmap decode(Request data) throws IOException;
 
   Bitmap hunt() throws IOException {
     Bitmap bitmap;
 
     if (!skipMemoryCache) {
+    	//try to get bitmap from cache(memory or diskcache)
+      //String realKey = Utils.encodeCachedKey(key);
       bitmap = cache.get(key);
       if (bitmap != null) {
         stats.dispatchCacheHit();
@@ -125,7 +147,7 @@ abstract class BitmapHunter implements Runnable {
         return bitmap;
       }
     }
-
+    //load bitmap from diskcard or internet.
     bitmap = decode(data);
 
     if (bitmap != null) {
@@ -144,10 +166,13 @@ abstract class BitmapHunter implements Runnable {
         }
       }
     }
-
     return bitmap;
   }
 
+  /**
+   * remember all the actions of the same key(url)
+   * @param action
+   */
   void attach(Action action) {
     if (this.action == null) {
       this.action = action;
@@ -375,11 +400,17 @@ abstract class BitmapHunter implements Runnable {
           int newSize = (int) Math.ceil(inHeight * (heightRatio / widthRatio));
           drawY = (inHeight - newSize) / 2;
           drawHeight = newSize;
+            if (Constants.DEBUG){
+                Log.d(TAG, String.format("transformResult 1:scale:%s, drawX:%s, drawY:%s, drawWidth:%s, drawHeight:%s", scale,drawX, drawY, drawWidth, drawHeight));
+            }
         } else {
           scale = heightRatio;
           int newSize = (int) Math.ceil(inWidth * (widthRatio / heightRatio));
           drawX = (inWidth - newSize) / 2;
           drawWidth = newSize;
+            if (Constants.DEBUG){
+                Log.d(TAG, String.format("transformResult 2:scale:%s, drawX:%s, drawY:%s, drawWidth:%s, drawHeight:%s", scale,drawX, drawY, drawWidth, drawHeight));
+            }
         }
         matrix.preScale(scale, scale);
       } else if (data.centerInside) {

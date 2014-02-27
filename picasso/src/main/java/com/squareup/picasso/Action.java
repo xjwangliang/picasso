@@ -56,6 +56,16 @@ abstract class Action<T> {
   abstract void complete(Bitmap result, Picasso.LoadedFrom from);
 
   abstract void error();
+  
+  /**
+   * 
+   * @param bmp
+   * @return whether save the original image
+   */
+  public Bitmap onOriginalBitmapLoaded(Bitmap bmp){
+	  return bmp;
+  }
+ 
 
   void cancel() {
     cancelled = true;
