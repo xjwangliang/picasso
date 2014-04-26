@@ -53,7 +53,7 @@ public final class Utils {
   static final int DEFAULT_READ_TIMEOUT = 20 * 1000; // 20s
   static final int DEFAULT_CONNECT_TIMEOUT = 15 * 1000; // 15s
   private static final String PICASSO_CACHE = "picasso-cache";
-  private static final int KEY_PADDING = 50; // Determined by exact science.
+  private static final int KEY_PADDING = 100; // Determined by exact science.
   private static final int MIN_DISK_CACHE_SIZE = 5 * 1024 * 1024; // 5MB
   private static final int MAX_DISK_CACHE_SIZE = 50 * 1024 * 1024; // 50MB
 
@@ -131,7 +131,7 @@ public final class Utils {
     String result = createKey(data, MAIN_THREAD_KEY_BUILDER);
     MAIN_THREAD_KEY_BUILDER.setLength(0);
 
-      result = Utils.encodeCachedKey(result);
+      result = Utils.encodeCachedKey(result)+"-"+data.resourceId;
     return result;
   }
 
